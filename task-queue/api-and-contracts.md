@@ -73,9 +73,26 @@ Observações:
 $summary = task_queue_get_batch_summary($batch_id);
 ```
 
-O resumo atual é orientado ao domínio de sincronização de pedidos. Ele lê o `result` JSON dos jobs e agrupa vendas criadas, vendas que seriam criadas em `dry_run`, vendas existentes, ignoradas e falhas.
+`task_queue_get_batch_summary()` é genérico no ponto de entrada. Ele busca o batch, busca os jobs e tenta resolver um `summary_callback` no registry do `batch_type`.
 
-Para outros domínios, use `task_queue_get_batch_progress()` para acompanhamento genérico e crie um resumo próprio se os dados não tiverem a mesma semântica de pedidos/vendas.
+Quando o batch tem `summary_callback`, a função delega o resumo para esse callback. Quando não tem, retorna um resumo genérico com contadores por status e os resultados decodificados dos jobs.
+
+Resumo genérico:
+
+```php
+array(
+	'batch_id' => 123,
+	'type' => 'meu_batch_type',
+	'status' => 'completed',
+	'total' => 10,
+	'completed' => 8,
+	'failed' => 2,
+	'pending' => 0,
+	'processing' => 0,
+	'progress' => 100,
+	'jobs' => array(),
+)
+```
 
 ## Registry de handlers
 
@@ -129,10 +146,12 @@ $definitions = array(
 	'sync_bling_orders_dry_run' => array(
 		'before_batch_start' => null,
 		'after_batch_finish' => 'lemis_sync_pedidos_after_batch_finish',
+		'summary_callback' => 'lemis_task_queue_summarize_sync_bling_orders',
 	),
 	'sync_bling_orders_live' => array(
 		'before_batch_start' => null,
 		'after_batch_finish' => 'lemis_sync_pedidos_after_batch_finish',
+		'summary_callback' => 'lemis_task_queue_summarize_sync_bling_orders',
 	),
 );
 ```
@@ -141,8 +160,17 @@ Hooks disponíveis:
 
 - `before_batch_start`: executado por `task_queue_start_batch()` antes de mudar o batch de `pending` para `processing`.
 - `after_batch_finish`: executado quando o batch chega a `completed`.
+- `summary_callback`: executado por `task_queue_get_batch_summary()` para produzir um resumo específico do domínio.
 
 O hook `after_batch_finish` roda dentro de um `try/catch`; se falhar, o erro é enviado ao `error_log`, mas o batch continua finalizado.
+
+O `summary_callback` recebe:
+
+```php
+function meu_resumidor(array $batch, array $jobs): array
+```
+
+Se um `summary_callback` configurado não for `callable`, a consulta de resumo lança erro de configuração. Quando o batch type não configura callback, o fallback genérico é usado.
 
 ## Contrato do payload
 

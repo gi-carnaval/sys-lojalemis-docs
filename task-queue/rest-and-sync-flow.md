@@ -50,6 +50,8 @@ Resposta de sucesso:
 GET /wp-json/lemis/v1/job-batches/{id}/summary
 ```
 
+Para batch types sem `summary_callback`, a rota retorna o resumo genérico da fila: contadores por status, progresso e lista de jobs com `result` decodificado quando o JSON for válido.
+
 Resposta de sucesso no fluxo de pedidos:
 
 ```json
@@ -136,6 +138,11 @@ Ambos chamam `lemis_sync_bling_order($order_id, $options)`.
 ## Contrato do resumo de pedidos
 
 `task_queue_get_batch_summary()` interpreta o `result` dos jobs como resultado de sincronização de pedidos.
+
+Essa interpretação fica isolada no `summary_callback` registrado para os batch types:
+
+- `sync_bling_orders_dry_run`
+- `sync_bling_orders_live`
 
 Chaves relevantes no `result`:
 

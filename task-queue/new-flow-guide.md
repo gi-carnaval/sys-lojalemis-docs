@@ -54,10 +54,29 @@ Atualize `task-queue/infrastructure/handlers/batch-hook-registry.php`:
 'sync_products' => array(
 	'before_batch_start' => null,
 	'after_batch_finish' => 'lemis_sync_products_after_batch_finish',
+	'summary_callback' => 'lemis_task_queue_summarize_sync_products',
 ),
 ```
 
 Se não precisar de finalização, use `after_batch_finish => null`.
+
+Se o resumo genérico for suficiente, omita `summary_callback` ou use `summary_callback => null`.
+
+Um `summary_callback` recebe o batch e os jobs:
+
+```php
+function lemis_task_queue_summarize_sync_products(
+	array $batch,
+	array $jobs
+): array {
+	return array(
+		'batch_id' => (int) $batch['id'],
+		'type' => $batch['type'],
+		'total' => count($jobs),
+		'products' => array(),
+	);
+}
+```
 
 ## 5. Crie uma função iniciadora
 
@@ -112,7 +131,7 @@ Uma tela pode reutilizar as rotas genéricas:
 - `GET /wp-json/lemis/v1/job-batches/{id}`
 - `GET /wp-json/lemis/v1/job-batches/{id}/summary`
 
-Se o resumo genérico não servir, crie uma rota própria de resumo para o novo domínio.
+Se o resumo genérico não servir, registre um `summary_callback` para o `batch_type`.
 
 ## Boas práticas
 
@@ -125,6 +144,7 @@ Se o resumo genérico não servir, crie uma rota própria de resumo para o novo 
 - Use falha definitiva para payload inválido, regra de negócio inválida ou handler inexistente.
 - Crie batches com `total_jobs = 0` quando a criação dos jobs puder falhar parcialmente.
 - Chame `task_queue_start_batch()` só depois de criar os jobs e ajustar `total_jobs`.
+- Registre `summary_callback` quando o domínio precisar de campos próprios no resumo.
 - Garanta que o worker esteja rodando no ambiente em que a fila precisa andar.
 
 ## Limitações conhecidas
@@ -132,7 +152,7 @@ Se o resumo genérico não servir, crie uma rota própria de resumo para o novo 
 - O registry de handlers é manual.
 - O registry de hooks de batch é manual.
 - As permissões REST atuais são administrativas.
-- `task_queue_get_batch_summary()` é específico para sincronização de pedidos.
+- O resumo específico de pedidos existe apenas nos batch types de sincronização; outros batch types usam fallback genérico.
 - Não existe painel genérico para listar todos os batches ou jobs.
 - O worker roda em loop infinito e precisa ser gerenciado pelo ambiente.
 - Jobs sem worker ativo permanecem em `pending`.
@@ -145,6 +165,7 @@ Antes de considerar um novo fluxo pronto:
 - O `task-queue/bootstrap.php` é carregado pelo tema.
 - O schema foi instalado no banco local.
 - Existe um `batch_type` registrado em `batch-hook-registry.php`.
+- O `batch_type` tem `summary_callback` quando precisa de resumo próprio.
 - Existe um `job_type` registrado em `handler-registry.php`.
 - O handler é `callable`.
 - O payload contém somente dados serializáveis.
