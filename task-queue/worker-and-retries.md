@@ -1,6 +1,6 @@
 # Task Queue: Worker, Retries e Recuperação
 
-[Voltar ao índice](../task-queue-bootstrap.md)
+[Voltar ao índice](task-queue-bootstrap.md)
 
 ## Worker
 

@@ -1,6 +1,6 @@
 # Task Queue: Referências de Código
 
-[Voltar ao índice](../task-queue-bootstrap.md)
+[Voltar ao índice](task-queue-bootstrap.md)
 
 ## Arquivos principais
 
@@ -13,6 +13,7 @@
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/api/batches.php`
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/api/sync.php`
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/domain/exceptions.php`
+- `wordpress/wp-content/themes/siteorigin-corp/task-queue/assets/enqueue.php`
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/infrastructure/database/table-names.php`
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/infrastructure/database/schema-map.php`
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/infrastructure/database/schema-installer.php`
@@ -21,6 +22,8 @@
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/infrastructure/handlers/handlers.php`
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/worker/process-job.php`
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/worker/worker.php`
+- `wordpress/wp-content/themes/siteorigin-corp/task-queue/assets/js/batch-progress.js`
+- `wordpress/wp-content/themes/siteorigin-corp/task-queue/assets/js/sync-page-test.js`
 - `wordpress/wp-content/themes/siteorigin-corp/task-queue/assets/js/sync-page.js`
 - `wordpress/wp-content/themes/siteorigin-corp/functions.php`
 - `wordpress/wp-content/themes/siteorigin-corp/page-sincronizar.php`
@@ -32,6 +35,7 @@ Depois de alterar código do módulo:
 
 ```bash
 docker compose exec wordpress php -l /var/www/html/wp-content/themes/siteorigin-corp/task-queue/bootstrap.php
+docker compose exec wordpress php -l /var/www/html/wp-content/themes/siteorigin-corp/task-queue/assets/enqueue.php
 docker compose exec wordpress php -l /var/www/html/wp-content/themes/siteorigin-corp/task-queue/services/jobs.php
 docker compose exec wordpress php -l /var/www/html/wp-content/themes/siteorigin-corp/task-queue/services/batches.php
 docker compose exec wordpress php -l /var/www/html/wp-content/themes/siteorigin-corp/task-queue/infrastructure/handlers/handlers.php

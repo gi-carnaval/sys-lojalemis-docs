@@ -1,6 +1,6 @@
 # Task Queue: Rotas REST e Fluxo de Sincronização de Pedidos
 
-[Voltar ao índice](../task-queue-bootstrap.md)
+[Voltar ao índice](task-queue-bootstrap.md)
 
 ## Rotas REST
 
@@ -105,7 +105,9 @@ Resposta de sucesso:
 
 Entrada:
 
-- A página enfileira a sincronização via JavaScript em `task-queue/assets/js/sync-page.js`.
+- `page-sincronizar.php` ainda enfileira diretamente `task-queue/assets/js/sync-page.js`.
+- `page-sincronizar-teste.php` usa `lemis_task_queue_enqueue(array('script' => 'sync-page-test'))`.
+- `sync-page-test.js` reaproveita `batch-progress.js` para iniciar a fila e acompanhar o batch.
 - O JavaScript chama `POST /wp-json/lemis/v1/sync-pedidos`.
 - Depois faz polling em `GET /wp-json/lemis/v1/job-batches/{id}`.
 - Ao concluir, consulta `GET /wp-json/lemis/v1/job-batches/{id}/summary`.

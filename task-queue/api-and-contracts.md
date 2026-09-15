@@ -1,6 +1,6 @@
 # Task Queue: API Pública e Contratos
 
-[Voltar ao índice](../task-queue-bootstrap.md)
+[Voltar ao índice](task-queue-bootstrap.md)
 
 ## Criar e iniciar batches
 

@@ -1,6 +1,6 @@
 # Task Queue: Guia Para Criar Um Novo Fluxo
 
-[Voltar ao índice](../task-queue-bootstrap.md)
+[Voltar ao índice](task-queue-bootstrap.md)
 
 ## 1. Defina a unidade de trabalho
 
@@ -133,6 +133,59 @@ Uma tela pode reutilizar as rotas genéricas:
 
 Se o resumo genérico não servir, registre um `summary_callback` para o `batch_type`.
 
+## 7. Reutilize o frontend de progresso
+
+Para páginas que precisam iniciar um batch e acompanhar progresso, prefira criar um script de página pequeno que use `batch-progress.js`.
+
+Registre o script em `task-queue/assets/enqueue.php`:
+
+```php
+'sync_products_page' => array(
+	'handle' => 'lemis-sync-products-page',
+	'file' => 'sync-products-page.js',
+	'dependencies' => array(
+		'lemis-batch-progress',
+	),
+),
+```
+
+Enfileire na página:
+
+```php
+lemis_task_queue_enqueue(
+	array(
+		'script' => 'sync_products_page',
+	)
+);
+```
+
+No JavaScript da página:
+
+```js
+var batchProgress = window.createBatchProgress({
+  restUrl: window.lemisTaskQueue.restUrl,
+  nonce: window.lemisTaskQueue.nonce,
+  api: {
+    start: 'sync-products',
+    progress: function (batchId) {
+      return 'job-batches/' + batchId;
+    },
+    summary: function (batchId) {
+      return 'job-batches/' + batchId + '/summary';
+    }
+  },
+  elements: {
+    panel: 'sync-products-progress-panel',
+    status: 'sync-products-status',
+    progressBar: 'sync-products-progress-bar',
+    progressText: 'sync-products-progress-text',
+    startButton: 'sync-products-start'
+  }
+});
+```
+
+O endpoint `api.start` precisa retornar pelo menos `batch_id`, `jobs_created` e `status`.
+
 ## Boas práticas
 
 - Use IDs e opções simples no payload.
@@ -145,6 +198,7 @@ Se o resumo genérico não servir, registre um `summary_callback` para o `batch_
 - Crie batches com `total_jobs = 0` quando a criação dos jobs puder falhar parcialmente.
 - Chame `task_queue_start_batch()` só depois de criar os jobs e ajustar `total_jobs`.
 - Registre `summary_callback` quando o domínio precisar de campos próprios no resumo.
+- Use `lemis_task_queue_enqueue()` para páginas que precisam dos assets frontend do módulo.
 - Garanta que o worker esteja rodando no ambiente em que a fila precisa andar.
 
 ## Limitações conhecidas
@@ -173,6 +227,7 @@ Antes de considerar um novo fluxo pronto:
 - O handler retorna um array serializável.
 - A função iniciadora cria batch, cria jobs, ajusta `total_jobs` e inicia/finaliza o batch.
 - O endpoint ou tela retorna `batch_id`.
-- A UI consulta a rota de progresso.
+- A UI consulta a rota de progresso ou usa `createBatchProgress()`.
+- O script de página foi registrado em `lemis_task_queue_get_frontend_scripts()` quando usa assets do módulo.
 - O worker está rodando.
 - Arquivos PHP alterados passaram por `php -l`.

@@ -1,6 +1,6 @@
 # Task Queue: Bootstrap, Configuração e Banco de Dados
 
-[Voltar ao índice](../task-queue-bootstrap.md)
+[Voltar ao índice](task-queue-bootstrap.md)
 
 ## Bootstrap
 
@@ -13,6 +13,7 @@ Arquivos carregados:
 - `infrastructure/database/schema-map.php`: definição das colunas e índices
 - `infrastructure/database/schema-installer.php`: instalação/atualização do schema
 - `domain/exceptions.php`: exceção retryable
+- `assets/enqueue.php`: registro e enqueue dos scripts frontend do módulo
 - `services/jobs.php`: criação, reserva, conclusão, falha, retry e recuperação de jobs
 - `services/batches.php`: criação, início, progresso, resumo e finalização de batches
 - `services/module.php`: bootstrap interno e instalação condicional do schema
@@ -52,6 +53,37 @@ Constantes principais:
 - `LEMIS_TASK_QUEUE_WORKER_MAX_ATTEMPTS`: número máximo de tentativas por job. Hoje: `3`.
 - `LEMIS_TASK_QUEUE_PROCESSING_TIMEOUT_SECONDS`: tempo máximo para um job ficar em `processing` antes de ser considerado preso. Hoje: `600`.
 - `LEMIS_TASK_QUEUE_RECOVERY_INTERVAL_SECONDS`: intervalo entre varreduras de recuperação no worker. Hoje: `10`.
+
+## Assets frontend
+
+O bootstrap passou a carregar `task-queue/assets/enqueue.php`. Esse arquivo concentra o registro e o enqueue dos scripts JavaScript do módulo.
+
+Funções principais:
+
+- `lemis_task_queue_enqueue(array $options): bool`: enfileira um script público do módulo pelo nome lógico.
+- `lemis_task_queue_register_frontend_assets()`: registra dependências compartilhadas, como `lemis-batch-progress`.
+- `lemis_task_queue_get_frontend_scripts()`: declara scripts disponíveis para consumo por páginas do tema.
+
+Exemplo de uso atual em `page-sincronizar-teste.php`:
+
+```php
+lemis_task_queue_enqueue(
+	array(
+		'script' => 'sync-page-test',
+	)
+);
+```
+
+Ao enfileirar um script, o helper também injeta antes dele:
+
+```js
+window.lemisTaskQueue = {
+  restUrl: '...',
+  nonce: '...'
+};
+```
+
+Essa configuração é usada pelos scripts frontend para chamar as rotas REST `lemis/v1`.
 
 ## Banco de dados
 

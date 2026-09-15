@@ -1,6 +1,6 @@
 # Task Queue: Visão Geral
 
-[Voltar ao índice](../task-queue-bootstrap.md)
+[Voltar ao índice](task-queue-bootstrap.md)
 
 ## Objetivo
 
@@ -68,5 +68,6 @@ Estados principais de batch:
 - Para entender o carregamento e as tabelas, veja [Bootstrap, configuração e banco de dados](bootstrap-and-schema.md).
 - Para usar as funções públicas, veja [API pública e contratos](api-and-contracts.md).
 - Para criar um fluxo novo, veja [Guia para criar um novo fluxo](new-flow-guide.md).
+- Para reaproveitar o acompanhamento no frontend, veja [Assets e progresso no frontend](frontend-assets.md).
 
 V1.0.1
