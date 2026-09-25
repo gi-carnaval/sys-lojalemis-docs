@@ -2,6 +2,8 @@
 
 [Voltar ao índice](task-queue-bootstrap.md)
 
+Para fluxos novos, prefira registrar tudo com `lemis_task_queue_register_flow()` em `task-queue/config/flows.php`. Os registries manuais de handler e batch continuam como fallback para fluxos legados.
+
 ## 1. Defina a unidade de trabalho
 
 Escolha o menor item que pode ser processado de forma independente.
@@ -38,31 +40,59 @@ function lemis_task_queue_handle_sync_product(array $payload): array
 }
 ```
 
-## 3. Registre o job type
+## 3. Registre o flow
 
-Atualize `task-queue/infrastructure/handlers/handler-registry.php`:
-
-```php
-'sync_product' => 'lemis_task_queue_handle_sync_product',
-```
-
-## 4. Registre o batch type
-
-Atualize `task-queue/infrastructure/handlers/batch-hook-registry.php`:
+Atualize `task-queue/config/flows.php`:
 
 ```php
-'sync_products' => array(
-	'before_batch_start' => null,
-	'after_batch_finish' => 'lemis_sync_products_after_batch_finish',
-	'summary_callback' => 'lemis_task_queue_summarize_sync_products',
-),
+lemis_task_queue_register_flow(
+	array(
+		'slug' => 'sync-products',
+		'route' => 'sync-products',
+		'batch_type' => 'sync_products',
+		'handler' => 'sync_product',
+		'item_key' => 'product_id',
+		'prepare_callback' => 'lemis_sync_products_prepare_flow',
+		'job_callback' => 'lemis_task_queue_handle_sync_product',
+		'summary_callback' => 'lemis_task_queue_summarize_sync_products',
+	)
+);
 ```
 
-Se não precisar de finalização, use `after_batch_finish => null`.
+O `handler` e o `batch_type` passam a ser descobertos pelos registries a partir do flow. So adicione entradas manuais em `handler-registry.php` ou `batch-hook-registry.php` quando estiver mantendo um fluxo legado que ainda nao usa `lemis_task_queue_register_flow()`.
 
-Se o resumo genérico for suficiente, omita `summary_callback` ou use `summary_callback => null`.
+## 4. Crie o prepare callback
 
-Um `summary_callback` recebe o batch e os jobs:
+O `prepare_callback` recebe a requisicao inicial e retorna os itens que viram jobs:
+
+```php
+function lemis_sync_products_prepare_flow(WP_REST_Request $request): array
+{
+	$product_ids = array_map('absint', (array) $request->get_param('product_ids'));
+	$product_ids = array_values(array_filter($product_ids));
+
+	return array(
+		'success' => true,
+		'items' => $product_ids,
+		'item_key' => 'product_id',
+	);
+}
+```
+
+Se precisar enviar dados comuns para todos os jobs, retorne `job_payload`:
+
+```php
+return array(
+	'success' => true,
+	'items' => $product_ids,
+	'job_payload' => array('mode' => 'live'),
+	'item_key' => 'product_id',
+);
+```
+
+## 5. Crie o summary callback quando necessario
+
+Se o resumo generico for suficiente, use `summary_callback => null`. Um `summary_callback` recebe o batch e os jobs:
 
 ```php
 function lemis_task_queue_summarize_sync_products(
@@ -78,9 +108,17 @@ function lemis_task_queue_summarize_sync_products(
 }
 ```
 
-## 5. Crie uma função iniciadora
+## 6. Inicie o flow pela rota generica
 
-Essa função pode ser chamada por uma rota REST, página admin ou ação interna.
+A rota generica usa o `slug` do flow:
+
+```text
+POST /wp-json/lemis/v1/task-queue/flows/sync-products/start
+```
+
+Ela chama `lemis_task_queue_start_flow()`, executa o `prepare_callback`, cria o batch e retorna `batch_id`, `jobs_created` e `status`.
+
+Use uma funcao iniciadora propria apenas quando precisar preservar um contrato legado:
 
 ```php
 function lemis_start_product_sync(array $product_ids): array
@@ -124,7 +162,7 @@ function lemis_start_product_sync(array $product_ids): array
 }
 ```
 
-## 6. Exponha progresso para a interface
+## 7. Exponha progresso para a interface
 
 Uma tela pode reutilizar as rotas genéricas:
 
@@ -133,9 +171,39 @@ Uma tela pode reutilizar as rotas genéricas:
 
 Se o resumo genérico não servir, registre um `summary_callback` para o `batch_type`.
 
-## 7. Reutilize o frontend de progresso
+## 8. Reutilize o frontend de progresso
 
-Para páginas que precisam iniciar um batch e acompanhar progresso, prefira criar um script de página pequeno que use `batch-progress.js`.
+Para páginas que precisam iniciar um batch e acompanhar progresso, prefira `lemis_task_queue_enqueue_flow()` e `lemis_task_queue_render_progress_panel()`.
+
+```php
+lemis_task_queue_enqueue_flow(
+	'sync-products',
+	array(
+		'form_id' => 'sync_products_form',
+		'id_prefix' => 'sync-products',
+	)
+);
+```
+
+```php
+<form id="sync_products_form">
+	<input type="hidden" name="product_ids[]" value="123">
+	<button type="submit" id="sync-products-start">
+		Sincronizar produtos
+	</button>
+</form>
+
+<?php
+lemis_task_queue_render_progress_panel(
+	array(
+		'id_prefix' => 'sync-products',
+		'title' => 'Acompanhamento dos produtos',
+	)
+);
+?>
+```
+
+Para telas com comportamento especifico, ainda e possivel criar um script de pagina pequeno que use `batch-progress.js`.
 
 Registre o script em `task-queue/assets/enqueue.php`:
 

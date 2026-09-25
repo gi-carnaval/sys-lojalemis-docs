@@ -52,7 +52,13 @@ O módulo permite enfileirar trabalhos demorados em batches, processar cada item
    - boas práticas
    - checklist
 
-8. [Referências de código](code-reference.md)
+8. [Migração do fluxo de promoções Mercado Livre](migrating-check-ml-promotions-flow.md)
+   - registro com `lemis_task_queue_register_flow()`
+   - `prepare_callback` para chunks de produtos
+   - alteração da página PHP frontend
+   - acompanhamento de jobs pelo painel genérico
+
+9. [Referências de código](code-reference.md)
    - lista dos arquivos principais do módulo
    - comandos de verificação recomendados
 
